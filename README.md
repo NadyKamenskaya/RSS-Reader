@@ -8,6 +8,10 @@
 
 [![GitHub Actions](https://github.com/NadyKamenskaya/frontend-project-11/actions/workflows/github-actions.yml/badge.svg)](https://github.com/NadyKamenskaya/frontend-project-11/actions/workflows/github-actions.yml)
 
-### Code Coverage:
+### CodeClimate:
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/8deb21672b23f3175cc7/maintainability)](https://codeclimate.com/github/NadyKamenskaya/frontend-project-11/maintainability)
+
+### Website
+
+[_**Check website**_](https://frontend-project-11-rho-eight.vercel.app/)
