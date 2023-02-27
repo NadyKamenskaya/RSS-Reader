@@ -1,0 +1,15 @@
+plugins: 
+  - eslint-plugin-import
+env:
+  node: true
+extends: airbnb-base
+parserOptions:
+  ecmaVersion: latest
+rules:
+  no-console: 0
+  import/extensions:
+    - error
+    - ignorePackages
+    - js: always
+  import/no-extraneous-dependencies: 0
+  no-underscore-dangle: [2, { "allow": ["__filename", "__dirname"] }]
