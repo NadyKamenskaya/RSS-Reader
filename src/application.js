@@ -1,5 +1,3 @@
-/* global document */
-
 import keyBy from 'lodash/keyBy.js';
 import isEmpty from 'lodash/isEmpty.js';
 import * as yup from 'yup';

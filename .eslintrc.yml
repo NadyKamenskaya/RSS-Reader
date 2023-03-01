@@ -1,6 +1,7 @@
 plugins: 
   - eslint-plugin-import
 env:
+  browser: true
   node: true
 extends: airbnb-base
 parserOptions:

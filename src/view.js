@@ -1,5 +1,3 @@
-/* global document */
-
 const initView = (error) => {
   const form = document.querySelector('.rss-form');
   const input = document.querySelector('#url-input');
