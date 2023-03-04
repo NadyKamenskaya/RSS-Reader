@@ -71,10 +71,6 @@ const app = () => {
       const currentId = uniqueId();
       axios.get((`https://allorigins.hexlet.app/get?url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
         .then((data) => {
-          if (data.message) {
-            watchedState.urlForm.error = 'networkError';
-            return watchedState;
-          }
           const doc = parsers(data.data.contents);
           return doc;
         })
@@ -114,6 +110,10 @@ const app = () => {
           return watchedState;
         })
         .catch((err) => {
+          if (err.message) {
+            watchedState.urlForm.error = 'networkError';
+            return watchedState;
+          }
           throw err;
         });
     }
