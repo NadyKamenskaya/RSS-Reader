@@ -1,10 +1,12 @@
 import i18n from 'i18next';
 import keyBy from 'lodash/keyBy.js';
-import isEmpty from 'lodash/isEmpty.js';
+import uniqueId from 'lodash/uniqueId.js';
 import * as yup from 'yup';
 import onChange from 'on-change';
+import axios from 'axios';
 import ru from './ru.js';
 import initView from './view.js';
+import parsers from './parsers.js';
 
 yup.setLocale({
   string: {
@@ -43,38 +45,77 @@ const app = () => {
         website: '',
       },
       feeds: [],
+      posts: [],
       error: '',
     },
   };
 
   const form = document.querySelector('.rss-form');
 
-  const watchedState = onChange(state, (path) => {
-    switch (path) {
-      case 'urlForm.error':
-        initView(i18nInstance, state.urlForm.error);
-        break;
-      default:
-        break;
-    }
-  });
+  const watchedState = onChange(state, initView(i18nInstance));
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
     const value = formData.get('url');
+
     watchedState.urlForm.data.website = value;
-
     const error = validate(watchedState.urlForm.data).website;
-    watchedState.urlForm.error = error;
 
-    if (isEmpty(error)) {
-      if (watchedState.urlForm.feeds.includes(value)) {
-        watchedState.urlForm.error = 'notOneOf';
-      } else {
-        watchedState.urlForm.feeds.push(value);
-      }
+    if (watchedState.urlForm.feeds.find((feed) => feed.link === value)) {
+      watchedState.urlForm.error = 'notOneOf';
+    } else if (error) {
+      watchedState.urlForm.error = error.message;
+    } else {
+      const currentId = uniqueId();
+      axios.get((`https://allorigins.hexlet.app/get?url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
+        .then((data) => {
+          if (data.statusText !== 'OK') {
+            watchedState.urlForm.error = 'networkError';
+            return watchedState;
+          }
+          const doc = parsers(data.data.contents);
+          return doc;
+        })
+        .then((doc) => {
+          const errorNode = doc.querySelector('parsererror');
+          if (errorNode) {
+            watchedState.urlForm.error = 'invalidLink';
+            return watchedState;
+          }
+          const title = doc.querySelector('title').textContent;
+          const description = doc.querySelector('description').textContent;
+          const promises = doc.querySelectorAll('item');
+          const promise = Promise.all(promises);
+          promise.then((items) => {
+            items.map((item) => {
+              const itemTitle = item.querySelector('title').textContent;
+              const itemDescription = item.querySelector('description').textContent;
+              const itemLink = item.querySelector('link').textContent;
+
+              watchedState.urlForm.posts = [...state.urlForm.posts, {
+                feedId: currentId,
+                link: itemLink,
+                title: itemTitle,
+                description: itemDescription,
+                id: uniqueId(),
+              }];
+
+              return watchedState.urlForm.posts;
+            });
+          });
+          watchedState.urlForm.feeds = [...state.urlForm.feeds, {
+            feedId: currentId,
+            link: `${value}`,
+            title,
+            description,
+          }];
+          return watchedState;
+        })
+        .catch((err) => {
+          throw err;
+        });
     }
   });
 };
