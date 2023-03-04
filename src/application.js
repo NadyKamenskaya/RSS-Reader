@@ -71,7 +71,7 @@ const app = () => {
       const currentId = uniqueId();
       axios.get((`https://allorigins.hexlet.app/get?url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
         .then((data) => {
-          if (data.statusText !== 'OK') {
+          if (data.message) {
             watchedState.urlForm.error = 'networkError';
             return watchedState;
           }
