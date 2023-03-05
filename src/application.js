@@ -69,7 +69,42 @@ const app = () => {
       watchedState.urlForm.error = error.message;
     } else {
       const currentId = uniqueId();
-      axios.get((`https://allorigins.hexlet.app/get?url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
+
+      const timeout = () => {
+        axios.get((`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
+          .then((data) => {
+            const doc = parsers(data.data.contents);
+            return doc;
+          })
+          .then((doc) => {
+            const promises = doc.querySelectorAll('item');
+            const promise = Promise.all(promises);
+
+            promise.then((items) => {
+              items.map((item) => {
+                const itemTitle = item.querySelector('title').textContent;
+                const itemDescription = item.querySelector('description').textContent;
+                const itemLink = item.querySelector('link').textContent;
+
+                const filter = state.urlForm.posts.filter((post) => post.link === itemLink);
+                if (filter.length === 0) {
+                  watchedState.urlForm.posts = [...state.urlForm.posts, {
+                    feedId: currentId,
+                    link: itemLink,
+                    title: itemTitle,
+                    description: itemDescription,
+                    id: uniqueId(),
+                  }];
+                }
+
+                return watchedState.urlForm.posts;
+              });
+            });
+          });
+        setTimeout(timeout, 5000);
+      };
+
+      axios.get((`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
         .then((data) => {
           const doc = parsers(data.data.contents);
           return doc;
@@ -84,6 +119,7 @@ const app = () => {
           const description = doc.querySelector('description').textContent;
           const promises = doc.querySelectorAll('item');
           const promise = Promise.all(promises);
+
           promise.then((items) => {
             items.map((item) => {
               const itemTitle = item.querySelector('title').textContent;
@@ -115,6 +151,9 @@ const app = () => {
             return watchedState;
           }
           throw err;
+        })
+        .finally(() => {
+          setTimeout(timeout, 5000);
         });
     }
   });
