@@ -7,6 +7,7 @@ import axios from 'axios';
 import ru from './ru.js';
 import initView from './view.js';
 import parsers from './parsers.js';
+import buildUrlProxy from './buildUrlProxy.js';
 
 yup.setLocale({
   string: {
@@ -32,7 +33,7 @@ const app = () => {
   i18nInstance
     .init({
       lng: 'ru',
-      debug: true,
+      debug: false,
       resources: {
         ru,
       },
@@ -44,17 +45,28 @@ const app = () => {
       data: {
         website: '',
       },
+      error: '',
       feeds: [],
       posts: [],
-      error: '',
+      uiPosts: [],
     },
   };
 
-  const form = document.querySelector('.rss-form');
+  const elements = {
+    form: document.querySelector('.rss-form'),
+    input: document.querySelector('#url-input'),
+    feedback: document.querySelector('.feedback'),
+    feedsContainer: document.querySelector('.feeds'),
+    postsContainer: document.querySelector('.posts'),
+    modalContainer: document.querySelector('.modal'),
+    modalTitle: document.querySelector('.modal-title'),
+    modalBody: document.querySelector('.modal-body'),
+    linkFooter: document.querySelector('.full-article'),
+  };
 
-  const watchedState = onChange(state, initView(i18nInstance));
+  const watchedState = onChange(state, initView(state, i18nInstance, elements));
 
-  form.addEventListener('submit', (e) => {
+  elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
@@ -71,40 +83,46 @@ const app = () => {
       const currentId = uniqueId();
 
       const timeout = () => {
-        axios.get((`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
-          .then((data) => {
-            const doc = parsers(data.data.contents);
-            return doc;
-          })
-          .then((doc) => {
-            const promises = doc.querySelectorAll('item');
-            const promise = Promise.all(promises);
+        state.urlForm.feeds.map((feed) => {
+          axios.get(buildUrlProxy(feed.link))
+            .then((data) => {
+              const doc = parsers(data.data.contents);
+              return doc;
+            })
+            .then((doc) => {
+              const promises = doc.querySelectorAll('item');
+              const promise = Promise.all(promises);
 
-            promise.then((items) => {
-              items.map((item) => {
-                const itemTitle = item.querySelector('title').textContent;
-                const itemDescription = item.querySelector('description').textContent;
-                const itemLink = item.querySelector('link').textContent;
+              promise.then((items) => {
+                items.map((item) => {
+                  const itemTitle = item.querySelector('title').textContent;
+                  const itemDescription = item.querySelector('description').textContent;
+                  const itemLink = item.querySelector('link').textContent;
 
-                const filter = state.urlForm.posts.filter((post) => post.link === itemLink);
-                if (filter.length === 0) {
-                  watchedState.urlForm.posts = [...state.urlForm.posts, {
-                    feedId: currentId,
-                    link: itemLink,
-                    title: itemTitle,
-                    description: itemDescription,
-                    id: uniqueId(),
-                  }];
-                }
+                  const filter = state.urlForm.posts.filter((post) => post.link === itemLink);
+                  if (filter.length === 0) {
+                    watchedState.urlForm.posts = [...state.urlForm.posts, {
+                      feedId: currentId,
+                      link: itemLink,
+                      title: itemTitle,
+                      description: itemDescription,
+                      id: uniqueId(),
+                    }];
+                  }
+                  watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
 
-                return watchedState.urlForm.posts;
+                  return watchedState;
+                });
               });
             });
-          });
+
+          return watchedState;
+        });
+
         setTimeout(timeout, 5000);
       };
 
-      axios.get((`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.urlForm.data.website)}`))
+      axios.get(buildUrlProxy(watchedState.urlForm.data.website))
         .then((data) => {
           const doc = parsers(data.data.contents);
           return doc;
@@ -112,7 +130,7 @@ const app = () => {
         .then((doc) => {
           const errorNode = doc.querySelector('parsererror');
           if (errorNode) {
-            watchedState.urlForm.error = 'invalidLink';
+            watchedState.urlForm.error = 'rssInvalid';
             return watchedState;
           }
           const title = doc.querySelector('title').textContent;
@@ -136,6 +154,7 @@ const app = () => {
 
               return watchedState.urlForm.posts;
             });
+            watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
           });
           watchedState.urlForm.feeds = [...state.urlForm.feeds, {
             feedId: currentId,
