@@ -66,6 +66,12 @@ const app = () => {
 
   const watchedState = onChange(state, initView(state, i18nInstance, elements));
 
+  elements.input.addEventListener('change', (event) => {
+    if (event.target.value.length === 0) {
+      watchedState.urlForm.error = 'isEmpty';
+    }
+  });
+
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
@@ -73,6 +79,7 @@ const app = () => {
     const value = formData.get('url');
 
     watchedState.urlForm.data.website = value;
+    console.log(watchedState.urlForm.data.website.length === 0);
     const error = validate(watchedState.urlForm.data).website;
 
     if (watchedState.urlForm.feeds.find((feed) => feed.link === value)) {
@@ -81,6 +88,7 @@ const app = () => {
       watchedState.urlForm.error = error.message;
     } else {
       const currentId = uniqueId();
+      watchedState.urlForm.error = '';
 
       const timeout = () => {
         state.urlForm.feeds.map((feed) => {

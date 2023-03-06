@@ -1,4 +1,4 @@
-const renderPosts = (state, elements, posts) => {
+const renderPosts = (state, i18next, elements, posts) => {
   const {
     postsContainer, modalContainer, modalTitle, modalBody, linkFooter,
   } = elements;
@@ -31,7 +31,7 @@ const renderPosts = (state, elements, posts) => {
     button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     button.setAttribute('data-bs-toggle', 'modal');
     button.setAttribute('data-bs-target', '#modal');
-    button.textContent = 'Просмотр';
+    button.textContent = i18next.t('button');
 
     elCard.addEventListener('click', (e) => {
       link.classList.remove('fw-bold');

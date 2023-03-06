@@ -12,7 +12,7 @@ const initView = (state, i18next, elements) => (path, value) => {
       renderFeeds(i18next, elements, value);
       break;
     case 'urlForm.posts':
-      renderPosts(state, elements, value);
+      renderPosts(state, i18next, elements, value);
       break;
     case 'urlForm.uiPosts':
       renderUiPosts(value);
