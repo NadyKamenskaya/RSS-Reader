@@ -1,5 +1,7 @@
 const renderFeeds = (i18next, elements, feeds) => {
-  const { input, feedback, feedsContainer } = elements;
+  const {
+    form, input, feedback, feedsContainer,
+  } = elements;
 
   const container = document.createElement('div');
   container.classList.add('card', 'border-0');
@@ -39,8 +41,8 @@ const renderFeeds = (i18next, elements, feeds) => {
   container.appendChild(listCard);
   feedsContainer.appendChild(container);
 
-  elements.form.reset();
-  elements.input.focus();
+  form.reset();
+  input.focus();
 };
 
 export default renderFeeds;

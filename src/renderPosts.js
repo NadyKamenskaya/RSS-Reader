@@ -33,31 +33,23 @@ const renderPosts = (state, elements, posts) => {
     button.setAttribute('data-bs-target', '#modal');
     button.textContent = 'Просмотр';
 
-    link.addEventListener('click', () => {
-      link.classList.remove('fw-bold');
-      link.classList.add('fw-normal', 'link-secondary');
-      if (!state.urlForm.uiPosts.includes(link.dataset.id)) {
-        state.urlForm.uiPosts.push(link.dataset.id);
-      }
-    });
-
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-
+    elCard.addEventListener('click', (e) => {
       link.classList.remove('fw-bold');
       link.classList.add('fw-normal', 'link-secondary');
       if (!state.urlForm.uiPosts.includes(link.dataset.id)) {
         state.urlForm.uiPosts.push(link.dataset.id);
       }
 
-      modalContainer.classList.add('show');
-      modalContainer.style.display = 'block';
-      modalContainer.removeAttribute('aria-hidden', 'true');
-      modalContainer.setAttribute('aria-modal', 'true');
+      if (e.target.textContent === 'Просмотр') {
+        modalContainer.classList.add('show');
+        modalContainer.style.display = 'block';
+        modalContainer.removeAttribute('aria-hidden', 'true');
+        modalContainer.setAttribute('aria-modal', 'true');
 
-      modalTitle.textContent = post.title;
-      modalBody.textContent = post.description;
-      linkFooter.setAttribute('href', post.link);
+        modalTitle.textContent = post.title;
+        modalBody.textContent = post.description;
+        linkFooter.setAttribute('href', post.link);
+      }
     });
 
     elCard.appendChild(link);
