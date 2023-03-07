@@ -3,8 +3,8 @@ import { fileURLToPath } from 'url';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
 export default {
   mode: 'development',
@@ -30,11 +30,11 @@ export default {
   ],
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(dirname, 'dist'),
   },
   devServer: {
     open: true,
-    static: path.resolve(__dirname, 'dist'),
+    static: path.resolve(dirname, 'dist'),
     port: 8080,
   },
 };

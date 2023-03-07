@@ -13,4 +13,4 @@ rules:
     - ignorePackages
     - js: always
   import/no-extraneous-dependencies: 0
-  no-underscore-dangle: [2, { "allow": ["__filename", "__dirname"] }]
+  # no-underscore-dangle: [2, { "allow": ["__filename", "__dirname"] }]
