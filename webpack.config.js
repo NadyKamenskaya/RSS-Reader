@@ -1,10 +1,5 @@
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
 
 export default {
   mode: 'development',
@@ -30,11 +25,9 @@ export default {
   ],
   output: {
     filename: 'main.js',
-    path: path.resolve(dirname, 'dist'),
   },
   devServer: {
     open: true,
-    static: path.resolve(dirname, 'dist'),
     port: 8080,
   },
 };
