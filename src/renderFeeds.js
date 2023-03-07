@@ -1,6 +1,6 @@
 const renderFeeds = (i18next, elements, feeds) => {
   const {
-    form, input, feedback, feedsContainer,
+    form, input, buttonForm, feedback, feedsContainer,
   } = elements;
 
   const container = document.createElement('div');
@@ -43,6 +43,7 @@ const renderFeeds = (i18next, elements, feeds) => {
 
   form.reset();
   input.focus();
+  buttonForm.disabled = false;
 };
 
 export default renderFeeds;

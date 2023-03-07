@@ -55,6 +55,7 @@ const app = () => {
   const elements = {
     form: document.querySelector('.rss-form'),
     input: document.querySelector('#url-input'),
+    buttonForm: document.querySelector('.h-100'),
     feedback: document.querySelector('.feedback'),
     feedsContainer: document.querySelector('.feeds'),
     postsContainer: document.querySelector('.posts'),
@@ -74,6 +75,8 @@ const app = () => {
 
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    elements.buttonForm.disabled = true;
 
     const formData = new FormData(e.target);
     const value = formData.get('url');
