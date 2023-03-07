@@ -61,6 +61,15 @@ const renderPosts = (state, i18next, elements, posts) => {
   container.appendChild(divCard);
   container.appendChild(listCard);
   postsContainer.appendChild(container);
+
+  modalContainer.addEventListener('click', (event) => {
+    if (event.target.textContent === 'Закрыть') {
+      modalContainer.classList.remove('show');
+      modalContainer.style.display = 'none';
+      modalContainer.setAttribute('aria-hidden', 'true');
+      modalContainer.removeAttribute('aria-modal', 'true');
+    }
+  });
 };
 
 export default renderPosts;

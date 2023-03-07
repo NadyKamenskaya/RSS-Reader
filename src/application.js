@@ -79,7 +79,6 @@ const app = () => {
     const value = formData.get('url');
 
     watchedState.urlForm.data.website = value;
-    console.log(watchedState.urlForm.data.website.length === 0);
     const error = validate(watchedState.urlForm.data).website;
 
     if (watchedState.urlForm.feeds.find((feed) => feed.link === value)) {
