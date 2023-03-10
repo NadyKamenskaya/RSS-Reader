@@ -4,7 +4,7 @@ const renderErrors = (i18next, elements, error) => {
   input.classList.add('is-invalid');
   feedback.classList.remove('text-success');
   feedback.classList.add('text-danger');
-  feedback.textContent = i18next.t(error);
+  feedback.textContent = i18next(error);
 
   input.removeAttribute('readonly');
   buttonForm.disabled = false;
@@ -29,9 +29,9 @@ const renderFeeds = (i18next, elements, feeds) => {
   input.classList.remove('is-invalid');
   feedback.classList.remove('text-danger');
   feedback.classList.add('text-success');
-  feedback.textContent = i18next.t('success');
+  feedback.textContent = i18next('success');
 
-  titleCard.textContent = 'Фиды';
+  titleCard.textContent = i18next('feeds');
 
   feeds.forEach((feed) => {
     const elCard = document.createElement('li');
@@ -59,10 +59,8 @@ const renderFeeds = (i18next, elements, feeds) => {
   buttonForm.disabled = false;
 };
 
-const renderPosts = (state, i18next, elements, posts) => {
-  const {
-    input, postsContainer, modalContainer, modalTitle, modalBody, linkFooter, buttonForm,
-  } = elements;
+const renderPosts = (i18next, elements, posts) => {
+  const { input, postsContainer, buttonForm } = elements;
 
   const titleCard = document.createElement('h2');
   titleCard.classList.add('card-title', 'h4');
@@ -75,7 +73,7 @@ const renderPosts = (state, i18next, elements, posts) => {
 
   postsContainer.innerHTML = '';
 
-  titleCard.textContent = 'Посты';
+  titleCard.textContent = i18next('posts');
 
   posts.forEach((post) => {
     const elCard = document.createElement('li');
@@ -92,26 +90,7 @@ const renderPosts = (state, i18next, elements, posts) => {
     button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     button.setAttribute('data-bs-toggle', 'modal');
     button.setAttribute('data-bs-target', '#modal');
-    button.textContent = i18next.t('button');
-
-    elCard.addEventListener('click', (e) => {
-      link.classList.remove('fw-bold');
-      link.classList.add('fw-normal', 'link-secondary');
-      if (!state.urlForm.uiPosts.includes(link.dataset.id)) {
-        state.urlForm.uiPosts.push(link.dataset.id);
-      }
-
-      if (e.target.textContent === 'Просмотр') {
-        modalContainer.classList.add('show');
-        modalContainer.style.display = 'block';
-        modalContainer.removeAttribute('aria-hidden', 'true');
-        modalContainer.setAttribute('aria-modal', 'true');
-
-        modalTitle.textContent = post.title;
-        modalBody.textContent = post.description;
-        linkFooter.setAttribute('href', post.link);
-      }
-    });
+    button.textContent = i18next('button');
 
     elCard.appendChild(link);
     elCard.appendChild(button);
@@ -123,28 +102,41 @@ const renderPosts = (state, i18next, elements, posts) => {
   container.appendChild(listCard);
   postsContainer.appendChild(container);
 
-  modalContainer.addEventListener('click', (event) => {
-    if (event.target.textContent === 'Закрыть') {
-      modalContainer.classList.remove('show');
-      modalContainer.style.display = 'none';
-      modalContainer.setAttribute('aria-hidden', 'true');
-      modalContainer.removeAttribute('aria-modal', 'true');
-    }
-  });
-
   input.removeAttribute('readonly');
   buttonForm.disabled = false;
 };
 
-const renderUiPosts = (ids) => {
-  ids.forEach((id) => {
+const renderUiPosts = (postsId) => {
+  postsId.forEach((id) => {
     const post = document.querySelector(`a[data-id="${id}"]`);
     post.classList.remove('fw-bold');
     post.classList.add('fw-normal', 'link-secondary');
   });
 };
 
-const initView = (state, i18next, elements) => (path, value) => {
+const renderModal = (elements, post) => {
+  const {
+    modalContainer, modalTitle, modalBody, linkFooter,
+  } = elements;
+
+  modalTitle.textContent = post.title;
+  modalBody.textContent = post.description;
+  modalContainer.classList.add('show');
+  modalContainer.style.display = 'block';
+  modalContainer.removeAttribute('aria-hidden', 'true');
+  modalContainer.setAttribute('aria-modal', 'true');
+  linkFooter.setAttribute('href', post.link);
+};
+
+const renderState = (elements) => {
+  const { input, buttonForm } = elements;
+
+  input.classList.remove('is-invalid');
+  input.setAttribute('readonly', 'readonly');
+  buttonForm.disabled = true;
+};
+
+const initView = (i18next, elements) => (path, value) => {
   switch (path) {
     case 'urlForm.error':
       renderErrors(i18next, elements, value);
@@ -153,10 +145,16 @@ const initView = (state, i18next, elements) => (path, value) => {
       renderFeeds(i18next, elements, value);
       break;
     case 'urlForm.posts':
-      renderPosts(state, i18next, elements, value);
+      renderPosts(i18next, elements, value);
       break;
-    case 'urlForm.uiPosts':
+    case 'uiPosts':
       renderUiPosts(value);
+      break;
+    case 'uiModal':
+      renderModal(elements, value);
+      break;
+    case 'uiState':
+      renderState(elements);
       break;
     default:
       break;
