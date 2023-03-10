@@ -73,9 +73,51 @@ const app = () => {
     }
   });
 
+  const timeout = () => {
+    const currentId = uniqueId();
+    state.urlForm.feeds.map((feed) => {
+      axios.get(buildUrlProxy(feed.link))
+        .then((data) => {
+          const doc = parsers(data.data.contents);
+          return doc;
+        })
+        .then((doc) => {
+          const promises = doc.querySelectorAll('item');
+          const promise = Promise.all(promises);
+
+          promise.then((items) => {
+            items.map((item) => {
+              const itemTitle = item.querySelector('title').textContent;
+              const itemDescription = item.querySelector('description').textContent;
+              const itemLink = item.querySelector('link').textContent;
+
+              const filter = state.urlForm.posts.filter((post) => post.link === itemLink);
+              if (filter.length === 0) {
+                watchedState.urlForm.posts = [...state.urlForm.posts, {
+                  feedId: currentId,
+                  link: itemLink,
+                  title: itemTitle,
+                  description: itemDescription,
+                  id: uniqueId(),
+                }];
+              }
+              watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
+
+              return watchedState;
+            });
+          });
+        });
+
+      return watchedState;
+    });
+
+    setTimeout(timeout, 5000);
+  };
+
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    elements.input.setAttribute('readonly', 'readonly');
     elements.buttonForm.disabled = true;
 
     const formData = new FormData(e.target);
@@ -92,99 +134,51 @@ const app = () => {
       const currentId = uniqueId();
       watchedState.urlForm.error = '';
 
-      const timeout = () => {
-        state.urlForm.feeds.map((feed) => {
-          axios.get(buildUrlProxy(feed.link))
-            .then((data) => {
-              const doc = parsers(data.data.contents);
-              return doc;
-            })
-            .then((doc) => {
-              const promises = doc.querySelectorAll('item');
-              const promise = Promise.all(promises);
-
-              promise.then((items) => {
-                items.map((item) => {
-                  const itemTitle = item.querySelector('title').textContent;
-                  const itemDescription = item.querySelector('description').textContent;
-                  const itemLink = item.querySelector('link').textContent;
-
-                  const filter = state.urlForm.posts.filter((post) => post.link === itemLink);
-                  if (filter.length === 0) {
-                    watchedState.urlForm.posts = [...state.urlForm.posts, {
-                      feedId: currentId,
-                      link: itemLink,
-                      title: itemTitle,
-                      description: itemDescription,
-                      id: uniqueId(),
-                    }];
-                  }
-                  watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
-
-                  return watchedState;
-                });
-              });
-            });
-
-          return watchedState;
-        });
-
-        setTimeout(timeout, 5000);
-      };
-
       axios.get(buildUrlProxy(watchedState.urlForm.data.website))
-        .then((data) => {
-          const doc = parsers(data.data.contents);
-          return doc;
+        .then((response) => {
+          const data = parsers(response.data.contents);
+          return data;
         })
-        .then((doc) => {
-          const errorNode = doc.querySelector('parsererror');
-          if (errorNode) {
+        .then((data) => {
+          console.log(data);
+          console.log(data.items);
+
+          if (data.errorNode) {
             watchedState.urlForm.error = 'rssInvalid';
             return watchedState;
           }
-          const title = doc.querySelector('title').textContent;
-          const description = doc.querySelector('description').textContent;
-          const promises = doc.querySelectorAll('item');
-          const promise = Promise.all(promises);
+          data.items.map((item) => {
+            watchedState.urlForm.posts = [...state.urlForm.posts, {
+              feedId: currentId,
+              link: item.link,
+              title: item.title,
+              description: item.description,
+              id: item.id,
+            }];
 
-          promise.then((items) => {
-            items.map((item) => {
-              const itemTitle = item.querySelector('title').textContent;
-              const itemDescription = item.querySelector('description').textContent;
-              const itemLink = item.querySelector('link').textContent;
-
-              watchedState.urlForm.posts = [...state.urlForm.posts, {
-                feedId: currentId,
-                link: itemLink,
-                title: itemTitle,
-                description: itemDescription,
-                id: uniqueId(),
-              }];
-
-              return watchedState.urlForm.posts;
-            });
-            watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
+            return watchedState.urlForm.posts;
           });
+          console.log(watchedState.urlForm.posts);
+          watchedState.urlForm.uiPosts = [...state.urlForm.uiPosts];
           watchedState.urlForm.feeds = [...state.urlForm.feeds, {
             feedId: currentId,
             link: `${value}`,
-            title,
-            description,
+            title: data.title,
+            description: data.description,
           }];
           return watchedState;
-        })
-        .catch((err) => {
-          if (err.message) {
-            watchedState.urlForm.error = 'networkError';
-            return watchedState;
-          }
-          throw err;
-        })
-        .finally(() => {
-          setTimeout(timeout, 5000);
         });
     }
+    // .catch((err) => {
+    //   if (err.message) {
+    //     watchedState.urlForm.error = 'networkError';
+    //     return watchedState;
+    //   }
+    //   throw err;
+    // })
+    // .finally(() => {
+    //   setTimeout(timeout, 5000);
+    // });
   });
 };
 
