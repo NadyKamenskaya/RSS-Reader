@@ -7,5 +7,7 @@ export default {
     isEmpty: 'Не должно быть пустым',
     success: 'RSS успешно загружен',
     button: 'Просмотр',
+    posts: 'Посты',
+    feeds: 'Фиды',
   },
 };
