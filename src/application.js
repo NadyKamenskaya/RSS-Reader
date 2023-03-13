@@ -150,7 +150,10 @@ const app = () => {
               return watchedState;
             })
             .catch((err) => {
-              watchedState.urlForm.error = err.message;
+              console.log(err.message);
+              watchedState.urlForm.error = (err.message === 'rssInvalid')
+                ? 'rssInvalid'
+                : 'networkError';
             });
         }
       });
