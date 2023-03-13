@@ -1,3 +1,5 @@
+import 'bootstrap';
+import './styles.scss';
 import i18n from 'i18next';
 import keyBy from 'lodash/keyBy.js';
 import uniqueId from 'lodash/uniqueId.js';
