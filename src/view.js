@@ -116,15 +116,15 @@ const renderUiPosts = (postsId) => {
 
 const renderModal = (elements, post) => {
   const {
-    modalContainer, modalTitle, modalBody, linkFooter,
+    modalTitle, modalBody, linkFooter,
   } = elements;
 
   modalTitle.textContent = post.title;
   modalBody.textContent = post.description;
-  modalContainer.classList.add('show');
-  modalContainer.style.display = 'block';
-  modalContainer.removeAttribute('aria-hidden', 'true');
-  modalContainer.setAttribute('aria-modal', 'true');
+  // modalContainer.classList.add('show');
+  // modalContainer.style.display = 'block';
+  // modalContainer.removeAttribute('aria-hidden', 'true');
+  // modalContainer.setAttribute('aria-modal', 'true');
   linkFooter.setAttribute('href', post.link);
 };
 
