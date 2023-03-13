@@ -42,7 +42,7 @@ const app = () => {
     },
     uiPosts: [],
     uiModal: {},
-    uiState: '',
+    uiState: 'reading',
   };
 
   const elements = {
@@ -90,14 +90,10 @@ const app = () => {
 
                 return watchedState.urlForm.posts;
               });
-              watchedState.uiPosts = [...state.uiPosts];
-            })
-            .catch((err) => {
-              throw err;
             });
           return watchedState;
         });
-        Promise.all(promises)
+        Promise.all([promises])
           .finally(() => {
             setTimeout(fetchNewPosts, 5000);
           });
@@ -116,8 +112,8 @@ const app = () => {
         const value = formData.get('url');
 
         watchedState.urlForm.data.website = value;
+        watchedState.urlForm.error = '';
         watchedState.uiState = 'sending';
-        watchedState.uiState = 'reading';
         const error = validate(watchedState.urlForm.data).website;
 
         if (watchedState.urlForm.feeds.find((feed) => feed.link === value)) {
@@ -126,7 +122,6 @@ const app = () => {
           watchedState.urlForm.error = error.message;
         } else {
           const currentId = uniqueId();
-          watchedState.urlForm.error = '';
 
           axios.get(buildUrlProxy(watchedState.urlForm.data.website))
             .then((response) => parsers(response.data.contents))
@@ -140,7 +135,7 @@ const app = () => {
                   id: item.id,
                 }];
 
-                return watchedState.urlForm.posts;
+                return watchedState;
               });
               watchedState.uiPosts = [...state.uiPosts];
               watchedState.urlForm.feeds = [...state.urlForm.feeds, {
@@ -149,15 +144,16 @@ const app = () => {
                 title: data.title,
                 description: data.description,
               }];
+
               return watchedState;
             })
             .catch((err) => {
-              console.log(err.message);
               watchedState.urlForm.error = (err.message === 'rssInvalid')
                 ? 'rssInvalid'
                 : 'networkError';
             });
         }
+        watchedState.uiState = 'reading';
       });
 
       elements.postsContainer.addEventListener('click', (e) => {

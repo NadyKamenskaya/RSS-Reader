@@ -128,12 +128,25 @@ const renderModal = (elements, post) => {
   linkFooter.setAttribute('href', post.link);
 };
 
-const renderState = (elements) => {
-  const { input, buttonForm } = elements;
+const renderState = (elements, value) => {
+  const { input, buttonForm, feedback } = elements;
 
-  input.classList.remove('is-invalid');
-  input.setAttribute('readonly', 'readonly');
-  buttonForm.disabled = true;
+  switch (value) {
+    case 'reading':
+      input.removeAttribute('readonly', 'readonly');
+      buttonForm.disabled = false;
+      break;
+    case 'sending':
+      input.classList.remove('is-invalid');
+      input.setAttribute('readonly', 'readonly');
+      feedback.classList.remove('text-success');
+      feedback.classList.remove('text-danger');
+      feedback.textContent = '';
+      buttonForm.disabled = true;
+      break;
+    default:
+      throw new Error(`Unknown state: ${value}`);
+  }
 };
 
 const initView = (i18next, elements) => (path, value) => {
@@ -154,7 +167,7 @@ const initView = (i18next, elements) => (path, value) => {
       renderModal(elements, value);
       break;
     case 'uiState':
-      renderState(elements);
+      renderState(elements, value);
       break;
     default:
       break;
