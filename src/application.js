@@ -68,9 +68,9 @@ const app = () => {
     .then((translate) => {
       const watchedState = onChange(state, initView(translate, elements));
 
-      const timeout = () => {
+      const fetchNewPosts = () => {
         const currentId = uniqueId();
-        state.urlForm.feeds.map((feed) => {
+        const promises = state.urlForm.feeds.map((feed) => {
           axios.get(buildUrlProxy(feed.link))
             .then((response) => parsers(response.data.contents))
             .then((data) => {
@@ -95,7 +95,10 @@ const app = () => {
             });
           return watchedState;
         });
-        setTimeout(timeout, 5000);
+        Promise.all(promises)
+          .finally(() => {
+            setTimeout(fetchNewPosts, 5000);
+          });
       };
 
       elements.input.addEventListener('change', (event) => {
@@ -147,14 +150,7 @@ const app = () => {
               return watchedState;
             })
             .catch((err) => {
-              if (err.message) {
-                watchedState.urlForm.error = 'networkError';
-                return watchedState;
-              }
-              throw err;
-            })
-            .finally(() => {
-              setTimeout(timeout, 5000);
+              watchedState.urlForm.error = err.message;
             });
         }
       });
@@ -177,7 +173,8 @@ const app = () => {
           };
         }
       });
-      return watchedState;
+
+      fetchNewPosts();
     });
 };
 
