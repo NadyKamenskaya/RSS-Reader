@@ -1,3 +1,7 @@
+const setAttributes = (el, attrs) => {
+  Object.keys(attrs).forEach((key) => el.setAttribute(key, attrs[key]));
+};
+
 const renderErrors = (i18next, elements, error) => {
   const { input, feedback, buttonForm } = elements;
 
@@ -43,14 +47,12 @@ const renderFeeds = (i18next, elements, feeds) => {
 
     titleEl.textContent = feed.title;
     descriptionEl.textContent = feed.description;
-    elCard.appendChild(titleEl);
-    elCard.appendChild(descriptionEl);
+    elCard.innerHTML += titleEl.outerHTML + descriptionEl.outerHTML;
     listCard.appendChild(elCard);
   });
 
   divCard.appendChild(titleCard);
-  container.appendChild(divCard);
-  container.appendChild(listCard);
+  container.innerHTML += divCard.outerHTML + listCard.outerHTML;
   feedsContainer.appendChild(container);
 
   form.reset();
@@ -79,27 +81,22 @@ const renderPosts = (i18next, elements, posts) => {
     const elCard = document.createElement('li');
     elCard.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
     const link = document.createElement('a');
-    link.setAttribute('href', post.link);
     link.classList.add('fw-bold');
-    link.setAttribute('data-id', post.id);
-    link.setAttribute('target', '_blank');
-    link.setAttribute('rel', 'noopener noreferrer');
+    setAttributes(link, {
+      href: post.link, 'data-id': post.id, target: '_blank', rel: 'noopener noreferrer',
+    });
     link.textContent = post.title;
     const button = document.createElement('button');
-    button.setAttribute('type', 'button');
+    setAttributes(button, { type: 'button', 'data-bs-toggle': 'modal', 'data-bs-target': '#modal' });
     button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-    button.setAttribute('data-bs-toggle', 'modal');
-    button.setAttribute('data-bs-target', '#modal');
     button.textContent = i18next('button');
 
-    elCard.appendChild(link);
-    elCard.appendChild(button);
+    elCard.innerHTML += link.outerHTML + button.outerHTML;
     listCard.appendChild(elCard);
   });
 
   divCard.appendChild(titleCard);
-  container.appendChild(divCard);
-  container.appendChild(listCard);
+  container.innerHTML += divCard.outerHTML + listCard.outerHTML;
   postsContainer.appendChild(container);
 
   input.removeAttribute('readonly');
@@ -115,16 +112,10 @@ const renderUiPosts = (postsId) => {
 };
 
 const renderModal = (elements, post) => {
-  const {
-    modalTitle, modalBody, linkFooter,
-  } = elements;
+  const { modalTitle, modalBody, linkFooter } = elements;
 
   modalTitle.textContent = post.title;
   modalBody.textContent = post.description;
-  // modalContainer.classList.add('show');
-  // modalContainer.style.display = 'block';
-  // modalContainer.removeAttribute('aria-hidden', 'true');
-  // modalContainer.setAttribute('aria-modal', 'true');
   linkFooter.setAttribute('href', post.link);
 };
 
@@ -139,8 +130,7 @@ const renderState = (elements, value) => {
     case 'sending':
       input.classList.remove('is-invalid');
       input.setAttribute('readonly', 'readonly');
-      feedback.classList.remove('text-success');
-      feedback.classList.remove('text-danger');
+      feedback.classList.remove('text-success', 'text-danger');
       feedback.textContent = '';
       buttonForm.disabled = true;
       break;
