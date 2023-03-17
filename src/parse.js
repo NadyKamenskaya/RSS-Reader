@@ -1,6 +1,4 @@
-import uniqueId from 'lodash/uniqueId.js';
-
-const parsers = (response) => {
+const parse = (response) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(response, 'text/xml');
   const errorNode = doc.querySelector('parsererror');
@@ -16,11 +14,10 @@ const parsers = (response) => {
       title: item.querySelector('title').textContent,
       description: item.querySelector('description').textContent,
       link: item.querySelector('link').textContent,
-      id: uniqueId(),
     }));
 
     return data;
   }
 };
 
-export default parsers;
+export default parse;
