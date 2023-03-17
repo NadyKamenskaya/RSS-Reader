@@ -2,22 +2,58 @@ const setAttributes = (el, attrs) => {
   Object.keys(attrs).forEach((key) => el.setAttribute(key, attrs[key]));
 };
 
-const renderErrors = (i18next, elements, error) => {
-  const { input, feedback, buttonForm } = elements;
+const renderFormStatus = (elements, value) => {
+  const { input } = elements;
 
-  input.classList.add('is-invalid');
-  feedback.classList.remove('text-success');
+  switch (value) {
+    case 'filling':
+      input.removeAttribute('readonly', 'readonly');
+      break;
+    case 'failed':
+      input.classList.add('is-invalid');
+      break;
+    default:
+      throw new Error(`Unknown state: ${value}`);
+  }
+};
+
+const renderLoadingStateStatus = (i18next, elements, value) => {
+  const {
+    form, input, buttonForm, feedback,
+  } = elements;
+
+  switch (value) {
+    case 'idle':
+      input.removeAttribute('readonly', 'readonly');
+      buttonForm.disabled = false;
+      break;
+    case 'load':
+      input.classList.remove('is-invalid');
+      input.setAttribute('readonly', 'readonly');
+      feedback.textContent = '';
+      feedback.classList.remove('text-success', 'text-danger');
+      buttonForm.disabled = true;
+      break;
+    case 'success':
+      feedback.classList.add('text-success');
+      feedback.textContent = i18next('success');
+      form.reset();
+      input.focus();
+      break;
+    default:
+      throw new Error(`Unknown state: ${value}`);
+  }
+};
+
+const renderErrors = (i18next, elements, error) => {
+  const { feedback } = elements;
+
   feedback.classList.add('text-danger');
   feedback.textContent = i18next(error);
-
-  input.removeAttribute('readonly');
-  buttonForm.disabled = false;
 };
 
 const renderFeeds = (i18next, elements, feeds) => {
-  const {
-    form, input, buttonForm, feedback, feedsContainer,
-  } = elements;
+  const { feedsContainer } = elements;
 
   const container = document.createElement('div');
   container.classList.add('card', 'border-0');
@@ -29,11 +65,6 @@ const renderFeeds = (i18next, elements, feeds) => {
   titleCard.classList.add('card-title', 'h4');
 
   feedsContainer.innerHTML = '';
-
-  input.classList.remove('is-invalid');
-  feedback.classList.remove('text-danger');
-  feedback.classList.add('text-success');
-  feedback.textContent = i18next('success');
 
   titleCard.textContent = i18next('feeds');
 
@@ -54,15 +85,10 @@ const renderFeeds = (i18next, elements, feeds) => {
   divCard.appendChild(titleCard);
   container.innerHTML += divCard.outerHTML + listCard.outerHTML;
   feedsContainer.appendChild(container);
-
-  form.reset();
-  input.focus();
-  input.removeAttribute('readonly');
-  buttonForm.disabled = false;
 };
 
 const renderPosts = (i18next, elements, posts) => {
-  const { input, postsContainer, buttonForm } = elements;
+  const { postsContainer } = elements;
 
   const titleCard = document.createElement('h2');
   titleCard.classList.add('card-title', 'h4');
@@ -98,69 +124,52 @@ const renderPosts = (i18next, elements, posts) => {
   divCard.appendChild(titleCard);
   container.innerHTML += divCard.outerHTML + listCard.outerHTML;
   postsContainer.appendChild(container);
-
-  input.removeAttribute('readonly');
-  buttonForm.disabled = false;
 };
 
-const renderUiPosts = (postsId) => {
-  postsId.forEach((id) => {
+const renderUiViewedPostIds = (postIds) => {
+  postIds.forEach((id) => {
     const post = document.querySelector(`a[data-id="${id}"]`);
     post.classList.remove('fw-bold');
     post.classList.add('fw-normal', 'link-secondary');
   });
 };
 
-const renderModal = (elements, post) => {
+const renderUiModalPostId = (state, elements, postId) => {
   const { modalTitle, modalBody, linkFooter } = elements;
 
-  modalTitle.textContent = post.title;
-  modalBody.textContent = post.description;
-  linkFooter.setAttribute('href', post.link);
+  const currentPost = state.posts
+    .find((post) => post.id === postId);
+
+  modalTitle.textContent = currentPost.title;
+  modalBody.textContent = currentPost.description;
+  linkFooter.setAttribute('href', currentPost.link);
 };
 
-const renderState = (elements, value) => {
-  const { input, buttonForm, feedback } = elements;
-
-  switch (value) {
-    case 'reading':
-      input.removeAttribute('readonly', 'readonly');
-      buttonForm.disabled = false;
-      break;
-    case 'sending':
-      input.classList.remove('is-invalid');
-      input.setAttribute('readonly', 'readonly');
-      feedback.classList.remove('text-success', 'text-danger');
-      feedback.textContent = '';
-      buttonForm.disabled = true;
-      break;
-    default:
-      throw new Error(`Unknown state: ${value}`);
-  }
-};
-
-const initView = (i18next, elements) => (path, value) => {
+const initView = (i18next, state, elements) => (path, value) => {
   switch (path) {
-    case 'urlForm.error':
+    case 'form.status':
+      renderFormStatus(elements, value);
+      break;
+    case 'loadingState.status':
+      renderLoadingStateStatus(i18next, elements, value);
+      break;
+    case 'error':
       renderErrors(i18next, elements, value);
       break;
-    case 'urlForm.feeds':
+    case 'feeds':
       renderFeeds(i18next, elements, value);
       break;
-    case 'urlForm.posts':
+    case 'posts':
       renderPosts(i18next, elements, value);
       break;
-    case 'uiPosts':
-      renderUiPosts(value);
+    case 'ui.viewedPostIds':
+      renderUiViewedPostIds(value);
       break;
-    case 'uiModal':
-      renderModal(elements, value);
-      break;
-    case 'uiState':
-      renderState(elements, value);
+    case 'ui.modal.postId':
+      renderUiModalPostId(state, elements, value);
       break;
     default:
-      break;
+      throw new Error(`Unknown path: ${path}`);
   }
 };
 

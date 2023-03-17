@@ -1,48 +1,44 @@
 import 'bootstrap';
 import './styles.scss';
 import i18n from 'i18next';
-import keyBy from 'lodash/keyBy.js';
 import uniqueId from 'lodash/uniqueId.js';
 import * as yup from 'yup';
 import onChange from 'on-change';
 import axios from 'axios';
 import ru from './ru.js';
 import initView from './view.js';
-import parsers from './parsers.js';
+import parse from './parse.js';
 import buildUrlProxy from './buildUrlProxy.js';
 
 const app = () => {
   yup.setLocale({
+    mixed: {
+      required: 'isEmpty',
+      notOneOf: 'notOneOf',
+    },
     string: {
       url: 'notURL',
     },
   });
 
-  const schema = yup.object().shape({
-    website: yup.string().url(),
-  });
-
-  const validate = (fields) => {
-    try {
-      schema.validateSync(fields, { abortEarly: false });
-      return {};
-    } catch (e) {
-      return keyBy(e.inner, 'path');
-    }
-  };
+  const validate = (schema, field) => schema.validate(field);
 
   const state = {
-    urlForm: {
-      data: {
-        website: '',
-      },
-      error: '',
-      feeds: [],
-      posts: [],
+    loadingState: {
+      status: 'idle',
     },
-    uiPosts: [],
-    uiModal: {},
-    uiState: 'reading',
+    form: {
+      error: null,
+      status: 'filling',
+    },
+    feeds: [],
+    posts: [],
+    ui: {
+      modal: {
+        postId: null,
+      },
+      viewedPostIds: new Set(),
+    },
   };
 
   const elements = {
@@ -52,7 +48,6 @@ const app = () => {
     feedback: document.querySelector('.feedback'),
     feedsContainer: document.querySelector('.feeds'),
     postsContainer: document.querySelector('.posts'),
-    modalContainer: document.querySelector('.modal'),
     modalTitle: document.querySelector('.modal-title'),
     modalBody: document.querySelector('.modal-body'),
     linkFooter: document.querySelector('.full-article'),
@@ -68,30 +63,30 @@ const app = () => {
       },
     })
     .then((translate) => {
-      const watchedState = onChange(state, initView(translate, elements));
+      const watchedState = onChange(state, initView(translate, state, elements));
 
       const fetchNewPosts = () => {
-        const currentId = uniqueId();
-        const promises = state.urlForm.feeds.map((feed) => {
+        const promises = state.feeds.forEach((feed) => {
           axios.get(buildUrlProxy(feed.link))
-            .then((response) => parsers(response.data.contents))
-            .then((data) => {
-              data.items.map((item) => {
-                const filter = state.urlForm.posts.filter((post) => post.link === item.link);
+            .then((response) => {
+              const data = parse(response.data.contents);
+              const currentId = uniqueId();
+              data.items.forEach((item) => {
+                const filter = state.posts.filter((post) => post.link === item.link);
                 if (filter.length === 0) {
-                  watchedState.urlForm.posts = [...state.urlForm.posts, {
+                  watchedState.posts = [...state.posts, {
                     feedId: currentId,
                     link: item.link,
                     title: item.title,
                     description: item.description,
-                    id: item.id,
+                    id: uniqueId(),
                   }];
                 }
-
-                return watchedState.urlForm.posts;
               });
+              const cloneSet = new Set([...state.ui.viewedPostIds]);
+              watchedState.ui.viewedPostIds.clear();
+              watchedState.ui.viewedPostIds = new Set([...cloneSet]);
             });
-          return watchedState;
         });
         Promise.all([promises])
           .finally(() => {
@@ -99,61 +94,68 @@ const app = () => {
           });
       };
 
-      elements.input.addEventListener('change', (event) => {
-        if (event.target.value.length === 0) {
-          watchedState.urlForm.error = 'isEmpty';
-        }
-      });
-
       elements.form.addEventListener('submit', (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);
         const value = formData.get('url');
 
-        watchedState.urlForm.data.website = value;
-        watchedState.urlForm.error = '';
-        watchedState.uiState = 'sending';
-        const error = validate(watchedState.urlForm.data).website;
+        watchedState.error = null;
+        watchedState.loadingState.status = 'load';
 
-        if (watchedState.urlForm.feeds.find((feed) => feed.link === value)) {
-          watchedState.urlForm.error = 'notOneOf';
-        } else if (error) {
-          watchedState.urlForm.error = error.message;
-        } else {
-          const currentId = uniqueId();
+        const arrayFeeds = state.feeds.reduce((acc, feed) => [...acc, feed.link], []);
 
-          axios.get(buildUrlProxy(watchedState.urlForm.data.website))
-            .then((response) => parsers(response.data.contents))
-            .then((data) => {
-              data.items.map((item) => {
-                watchedState.urlForm.posts = [...state.urlForm.posts, {
+        const schema = yup.string().url().notOneOf(arrayFeeds).required();
+
+        validate(schema, value)
+          .then((currentLink) => {
+            axios.get(buildUrlProxy(currentLink))
+              .then((response) => {
+                const data = parse(response.data.contents);
+                const currentId = uniqueId();
+                watchedState.feeds = [...state.feeds, {
                   feedId: currentId,
-                  link: item.link,
-                  title: item.title,
-                  description: item.description,
-                  id: item.id,
+                  link: currentLink,
+                  title: data.title,
+                  description: data.description,
                 }];
-
-                return watchedState;
+                data.items.forEach((item) => {
+                  watchedState.posts = [...state.posts, {
+                    feedId: currentId,
+                    link: item.link,
+                    title: item.title,
+                    description: item.description,
+                    id: uniqueId(),
+                  }];
+                });
+                const cloneSet = new Set([...state.ui.viewedPostIds]);
+                watchedState.ui.viewedPostIds.clear();
+                watchedState.ui.viewedPostIds = new Set([...cloneSet]);
+                watchedState.loadingState.status = 'success';
+                watchedState.loadingState.status = 'idle';
+              })
+              .catch((error) => {
+                switch (error.message) {
+                  case 'rssInvalid':
+                    watchedState.error = 'rssInvalid';
+                    break;
+                  case 'Network Error':
+                    watchedState.error = 'networkError';
+                    break;
+                  default:
+                    watchedState.error = 'unknown';
+                    break;
+                }
+                watchedState.form.status = 'filling';
+                watchedState.loadingState.status = 'idle';
               });
-              watchedState.uiPosts = [...state.uiPosts];
-              watchedState.urlForm.feeds = [...state.urlForm.feeds, {
-                feedId: currentId,
-                link: `${value}`,
-                title: data.title,
-                description: data.description,
-              }];
-
-              return watchedState;
-            })
-            .catch((err) => {
-              watchedState.urlForm.error = (err.message === 'rssInvalid')
-                ? 'rssInvalid'
-                : 'networkError';
-            });
-        }
-        watchedState.uiState = 'reading';
+          })
+          .catch((error) => {
+            watchedState.error = error.message;
+            watchedState.form.status = 'failed';
+            watchedState.form.status = 'filling';
+            watchedState.loadingState.status = 'idle';
+          });
       });
 
       elements.postsContainer.addEventListener('click', (e) => {
@@ -161,18 +163,10 @@ const app = () => {
           ? e.target.dataset.id
           : e.target.previousElementSibling.dataset.id;
 
-        if (!state.uiPosts.includes(currentPostId)) {
-          watchedState.uiPosts.push(currentPostId);
-        }
         if (e.target.tagName === 'BUTTON') {
-          const currentPost = state.urlForm.posts
-            .filter((post) => post.id === currentPostId);
-          watchedState.uiModal = {
-            title: currentPost[0].title,
-            description: currentPost[0].description,
-            link: currentPost[0].link,
-          };
+          watchedState.ui.modal.postId = currentPostId;
         }
+        watchedState.ui.viewedPostIds.add(currentPostId);
       });
 
       fetchNewPosts();
