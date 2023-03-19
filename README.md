@@ -20,6 +20,12 @@
 
 _Make sure you have Node.js version 13 or higher installed_
 
-### Website
+## Installation
+
+```bash
+make install
+```
+
+## Demo
 
 [_**Check website**_](https://frontend-project-11-rho-eight.vercel.app/)
