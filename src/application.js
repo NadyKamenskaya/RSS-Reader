@@ -83,9 +83,6 @@ const app = () => {
                   }];
                 }
               });
-              const cloneSet = new Set([...state.ui.viewedPostIds]);
-              watchedState.ui.viewedPostIds.clear();
-              watchedState.ui.viewedPostIds = new Set([...cloneSet]);
             });
         });
         Promise.all([promises])
@@ -128,9 +125,6 @@ const app = () => {
                     id: uniqueId(),
                   }];
                 });
-                const cloneSet = new Set([...state.ui.viewedPostIds]);
-                watchedState.ui.viewedPostIds.clear();
-                watchedState.ui.viewedPostIds = new Set([...cloneSet]);
                 watchedState.loadingState.status = 'success';
                 watchedState.loadingState.status = 'idle';
               })

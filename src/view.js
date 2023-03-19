@@ -87,7 +87,7 @@ const renderFeeds = (i18next, elements, feeds) => {
   feedsContainer.appendChild(container);
 };
 
-const renderPosts = (i18next, elements, posts) => {
+const renderPosts = (i18next, state, elements, posts) => {
   const { postsContainer } = elements;
 
   const titleCard = document.createElement('h2');
@@ -107,7 +107,11 @@ const renderPosts = (i18next, elements, posts) => {
     const elCard = document.createElement('li');
     elCard.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
     const link = document.createElement('a');
-    link.classList.add('fw-bold');
+    if (state.ui.viewedPostIds.has(post.id)) {
+      link.classList.add('fw-normal', 'link-secondary');
+    } else {
+      link.classList.add('fw-bold');
+    }
     setAttributes(link, {
       href: post.link, 'data-id': post.id, target: '_blank', rel: 'noopener noreferrer',
     });
@@ -160,7 +164,7 @@ const initView = (i18next, state, elements) => (path, value) => {
       renderFeeds(i18next, elements, value);
       break;
     case 'posts':
-      renderPosts(i18next, elements, value);
+      renderPosts(i18next, state, elements, value);
       break;
     case 'ui.viewedPostIds':
       renderUiViewedPostIds(value);
