@@ -153,8 +153,6 @@ const renderUiModalPostId = (state, elements, postId) => {
 };
 
 const initView = (i18next, state, elements) => (path, value) => {
-  console.log(path);
-  console.log(value);
   switch (path) {
     case 'form.status':
       renderFormStatus(elements, value);
