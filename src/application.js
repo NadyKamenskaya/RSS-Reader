@@ -25,6 +25,7 @@ const app = () => {
 
   const state = {
     loadingState: {
+      error: null,
       status: 'idle',
     },
     form: {
@@ -65,8 +66,28 @@ const app = () => {
     .then((translate) => {
       const watchedState = onChange(state, initView(translate, state, elements));
 
+      const addPosts = (post, id) => {
+        watchedState.posts = [...state.posts, {
+          feedId: id,
+          link: post.link,
+          title: post.title,
+          description: post.description,
+          id: uniqueId(),
+        }];
+      };
+
+      const getErrorType = (error) => {
+        if (error.isParseError) {
+          watchedState.loadingState.error = 'rssInvalid';
+        } else if (error.isAxiosError) {
+          watchedState.loadingState.error = 'networkError';
+        } else {
+          watchedState.loadingState.error = 'unknown';
+        }
+      };
+
       const fetchNewPosts = () => {
-        const promises = state.feeds.forEach((feed) => {
+        const promises = state.feeds.map((feed) => {
           axios.get(buildUrlProxy(feed.link))
             .then((response) => {
               const data = parse(response.data.contents);
@@ -74,16 +95,11 @@ const app = () => {
               data.items.forEach((item) => {
                 const filter = state.posts.filter((post) => post.link === item.link);
                 if (filter.length === 0) {
-                  watchedState.posts = [...state.posts, {
-                    feedId: currentId,
-                    link: item.link,
-                    title: item.title,
-                    description: item.description,
-                    id: uniqueId(),
-                  }];
+                  addPosts(item, currentId);
                 }
               });
             });
+          return watchedState;
         });
         Promise.all([promises])
           .finally(() => {
@@ -97,7 +113,9 @@ const app = () => {
         const formData = new FormData(e.target);
         const value = formData.get('url');
 
-        watchedState.error = null;
+        watchedState.loadingState.error = null;
+        watchedState.form.error = null;
+        watchedState.form.status = 'filling';
         watchedState.loadingState.status = 'load';
 
         const arrayFeeds = state.feeds.reduce((acc, feed) => [...acc, feed.link], []);
@@ -117,37 +135,20 @@ const app = () => {
                   description: data.description,
                 }];
                 data.items.forEach((item) => {
-                  watchedState.posts = [...state.posts, {
-                    feedId: currentId,
-                    link: item.link,
-                    title: item.title,
-                    description: item.description,
-                    id: uniqueId(),
-                  }];
+                  addPosts(item, currentId);
                 });
                 watchedState.loadingState.status = 'success';
-                watchedState.loadingState.status = 'idle';
               })
               .catch((error) => {
-                switch (error.message) {
-                  case 'rssInvalid':
-                    watchedState.error = 'rssInvalid';
-                    break;
-                  case 'Network Error':
-                    watchedState.error = 'networkError';
-                    break;
-                  default:
-                    watchedState.error = 'unknown';
-                    break;
-                }
-                watchedState.form.status = 'filling';
+                console.log('Hello');
+                getErrorType(error);
+                watchedState.form.status = 'failed';
                 watchedState.loadingState.status = 'idle';
               });
           })
           .catch((error) => {
-            watchedState.error = error.message;
+            watchedState.form.error = error.message;
             watchedState.form.status = 'failed';
-            watchedState.form.status = 'filling';
             watchedState.loadingState.status = 'idle';
           });
       });

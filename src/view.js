@@ -11,6 +11,7 @@ const renderFormStatus = (elements, value) => {
       break;
     case 'failed':
       input.classList.add('is-invalid');
+      input.removeAttribute('readonly', 'readonly');
       break;
     default:
       throw new Error(`Unknown state: ${value}`);
@@ -37,6 +38,8 @@ const renderLoadingStateStatus = (i18next, elements, value) => {
     case 'success':
       feedback.classList.add('text-success');
       feedback.textContent = i18next('success');
+      input.removeAttribute('readonly', 'readonly');
+      buttonForm.disabled = false;
       form.reset();
       input.focus();
       break;
@@ -150,6 +153,8 @@ const renderUiModalPostId = (state, elements, postId) => {
 };
 
 const initView = (i18next, state, elements) => (path, value) => {
+  console.log(path);
+  console.log(value);
   switch (path) {
     case 'form.status':
       renderFormStatus(elements, value);
@@ -157,7 +162,10 @@ const initView = (i18next, state, elements) => (path, value) => {
     case 'loadingState.status':
       renderLoadingStateStatus(i18next, elements, value);
       break;
-    case 'error':
+    case 'form.error':
+      renderErrors(i18next, elements, value);
+      break;
+    case 'loadingState.error':
       renderErrors(i18next, elements, value);
       break;
     case 'feeds':
