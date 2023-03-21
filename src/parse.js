@@ -3,7 +3,10 @@ const parse = (response) => {
   const doc = parser.parseFromString(response, 'text/xml');
   const errorNode = doc.querySelector('parsererror');
   if (errorNode) {
-    throw new Error('rssInvalid');
+    const parsingError = new Error('rssInvalid');
+    parsingError.isParseError = true;
+
+    throw parsingError;
   } else {
     const data = {
       title: doc.querySelector('title').textContent,
