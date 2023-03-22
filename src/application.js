@@ -10,6 +10,32 @@ import initView from './view.js';
 import parse from './parse.js';
 import buildUrlProxy from './buildUrlProxy.js';
 
+const getErrorType = (error) => {
+  if (error.isParseError) {
+    return 'rssInvalid';
+  }
+  if (error.isAxiosError) {
+    return 'networkError';
+  }
+
+  return 'unknown';
+};
+
+const buildFeedObject = (feed, link, id) => ({
+  feedId: id,
+  link,
+  title: feed.title,
+  description: feed.description,
+});
+
+const buildPostObject = (post, id) => ({
+  feedId: id,
+  link: post.link,
+  title: post.title,
+  description: post.description,
+  id: uniqueId(),
+});
+
 const app = () => {
   yup.setLocale({
     mixed: {
@@ -66,26 +92,6 @@ const app = () => {
     .then((translate) => {
       const watchedState = onChange(state, initView(translate, state, elements));
 
-      const addPosts = (post, id) => {
-        watchedState.posts = [...state.posts, {
-          feedId: id,
-          link: post.link,
-          title: post.title,
-          description: post.description,
-          id: uniqueId(),
-        }];
-      };
-
-      const getErrorType = (error) => {
-        if (error.isParseError) {
-          watchedState.loadingState.error = 'rssInvalid';
-        } else if (error.isAxiosError) {
-          watchedState.loadingState.error = 'networkError';
-        } else {
-          watchedState.loadingState.error = 'unknown';
-        }
-      };
-
       const fetchNewPosts = () => {
         const promises = state.feeds.map((feed) => {
           axios.get(buildUrlProxy(feed.link))
@@ -95,7 +101,7 @@ const app = () => {
               data.items.forEach((item) => {
                 const filter = state.posts.filter((post) => post.link === item.link);
                 if (filter.length === 0) {
-                  addPosts(item, currentId);
+                  watchedState.posts = [...state.posts, buildPostObject(item, currentId)];
                 }
               });
             });
@@ -128,20 +134,15 @@ const app = () => {
               .then((response) => {
                 const data = parse(response.data.contents);
                 const currentId = uniqueId();
-                watchedState.feeds = [...state.feeds, {
-                  feedId: currentId,
-                  link: currentLink,
-                  title: data.title,
-                  description: data.description,
-                }];
+                watchedState.feeds = [...state.feeds,
+                  buildFeedObject(data, currentLink, currentId)];
                 data.items.forEach((item) => {
-                  addPosts(item, currentId);
+                  watchedState.posts = [...state.posts, buildPostObject(item, currentId)];
                 });
                 watchedState.loadingState.status = 'success';
               })
               .catch((error) => {
-                console.log('Hello');
-                getErrorType(error);
+                watchedState.loadingState.error = getErrorType(error);
                 watchedState.form.status = 'failed';
                 watchedState.loadingState.status = 'idle';
               });
