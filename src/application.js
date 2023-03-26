@@ -10,6 +10,8 @@ import initView from './view.js';
 import parse from './parse.js';
 import buildUrlProxy from './buildUrlProxy.js';
 
+const validate = (schema, field) => schema.validate(field);
+
 const getErrorType = (error) => {
   if (error.isParseError) {
     return 'rssInvalid';
@@ -36,6 +38,27 @@ const buildPostObject = (post, id) => ({
   id: uniqueId(),
 });
 
+const fetchNewPosts = (state, watchedState) => {
+  const promises = state.feeds.map((feed) => {
+    axios.get(buildUrlProxy(feed.link))
+      .then((response) => {
+        const data = parse(response.data.contents);
+        const currentId = uniqueId();
+        data.items.forEach((item) => {
+          const filter = state.posts.filter((post) => post.link === item.link);
+          if (filter.length === 0) {
+            watchedState.posts.push(buildPostObject(item, currentId));
+          }
+        });
+      });
+    return watchedState;
+  });
+  Promise.all([promises])
+    .finally(() => {
+      setTimeout(() => fetchNewPosts(state, watchedState), 5000);
+    });
+};
+
 const app = () => {
   yup.setLocale({
     mixed: {
@@ -46,8 +69,6 @@ const app = () => {
       url: 'notURL',
     },
   });
-
-  const validate = (schema, field) => schema.validate(field);
 
   const state = {
     loadingState: {
@@ -92,27 +113,6 @@ const app = () => {
     .then((translate) => {
       const watchedState = onChange(state, initView(translate, state, elements));
 
-      const fetchNewPosts = () => {
-        const promises = state.feeds.map((feed) => {
-          axios.get(buildUrlProxy(feed.link))
-            .then((response) => {
-              const data = parse(response.data.contents);
-              const currentId = uniqueId();
-              data.items.forEach((item) => {
-                const filter = state.posts.filter((post) => post.link === item.link);
-                if (filter.length === 0) {
-                  watchedState.posts = [...state.posts, buildPostObject(item, currentId)];
-                }
-              });
-            });
-          return watchedState;
-        });
-        Promise.all([promises])
-          .finally(() => {
-            setTimeout(fetchNewPosts, 5000);
-          });
-      };
-
       elements.form.addEventListener('submit', (e) => {
         e.preventDefault();
 
@@ -129,27 +129,24 @@ const app = () => {
         const schema = yup.string().url().notOneOf(arrayFeeds).required();
 
         validate(schema, value)
-          .then((currentLink) => {
-            axios.get(buildUrlProxy(currentLink))
-              .then((response) => {
-                const data = parse(response.data.contents);
-                const currentId = uniqueId();
-                watchedState.feeds = [...state.feeds,
-                  buildFeedObject(data, currentLink, currentId)];
-                data.items.forEach((item) => {
-                  watchedState.posts = [...state.posts, buildPostObject(item, currentId)];
-                });
-                watchedState.loadingState.status = 'success';
-              })
-              .catch((error) => {
-                watchedState.loadingState.error = getErrorType(error);
-                watchedState.form.status = 'failed';
-                watchedState.loadingState.status = 'idle';
-              });
+          .then((currentLink) => axios.get(buildUrlProxy(currentLink)))
+          .then((response) => {
+            const data = parse(response.data.contents);
+            const currentId = uniqueId();
+            watchedState.feeds = [...state.feeds,
+              buildFeedObject(data, value, currentId)];
+            data.items.forEach((item) => {
+              watchedState.posts = [...state.posts, buildPostObject(item, currentId)];
+            });
+            watchedState.loadingState.status = 'success';
           })
           .catch((error) => {
-            watchedState.form.error = error.message;
-            watchedState.form.status = 'failed';
+            if (error.name === 'ValidationError') {
+              watchedState.form.error = error.message;
+              watchedState.form.status = 'failed';
+            } else {
+              watchedState.loadingState.error = getErrorType(error);
+            }
             watchedState.loadingState.status = 'idle';
           });
       });
@@ -165,7 +162,7 @@ const app = () => {
         watchedState.ui.viewedPostIds.add(currentPostId);
       });
 
-      fetchNewPosts();
+      fetchNewPosts(state, watchedState);
     });
 };
 
