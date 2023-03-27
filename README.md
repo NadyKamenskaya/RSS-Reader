@@ -28,4 +28,10 @@ make install
 
 ## Demo
 
-[_**Check website**_](https://frontend-project-11-rho-eight.vercel.app/)
+https://user-images.githubusercontent.com/106657729/227870772-a0c5d51b-f2d8-4aa8-8ed4-cd564fa5ed8b.mp4
+
+---
+
+_You can try it for yourself by clicking on the link below!_ 👇🏻
+
+[_**Click me**_](https://frontend-project-11-rho-eight.vercel.app/)
