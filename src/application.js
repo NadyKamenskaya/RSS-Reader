@@ -38,24 +38,22 @@ const buildPostObject = (post, id) => ({
   id: uniqueId(),
 });
 
-const fetchNewPosts = (state, watchedState) => {
-  const promises = state.feeds.map((feed) => {
-    axios.get(buildUrlProxy(feed.link))
-      .then((response) => {
-        const data = parse(response.data.contents);
-        const currentId = uniqueId();
-        data.items.forEach((item) => {
-          const filter = state.posts.filter((post) => post.link === item.link);
-          if (filter.length === 0) {
-            watchedState.posts.push(buildPostObject(item, currentId));
-          }
-        });
+const fetchNewPosts = (watchedState) => {
+  const promises = watchedState.feeds.map((feed) => axios
+    .get(buildUrlProxy(feed.link))
+    .then((response) => {
+      const data = parse(response.data.contents);
+      const currentId = uniqueId();
+      data.items.forEach((item) => {
+        const filter = watchedState.posts.filter((post) => post.link === item.link);
+        if (filter.length === 0) {
+          watchedState.posts.push(buildPostObject(item, currentId));
+        }
       });
-    return watchedState;
-  });
+    }));
   Promise.all([promises])
     .finally(() => {
-      setTimeout(() => fetchNewPosts(state, watchedState), 5000);
+      setTimeout(() => fetchNewPosts(watchedState), 5000);
     });
 };
 
@@ -162,7 +160,7 @@ const app = () => {
         watchedState.ui.viewedPostIds.add(currentPostId);
       });
 
-      fetchNewPosts(state, watchedState);
+      fetchNewPosts(watchedState);
     });
 };
 
