@@ -1,4 +1,4 @@
-# frontend-project-11
+# RSS Reader
 
 ### Hexlet tests and linter status:
 
